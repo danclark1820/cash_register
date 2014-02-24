@@ -32,10 +32,10 @@ puts "#{counter + 1}) Reporting"
 
 #Asks user for input then does math and stores transactions
 selection = 0
-while selection != counter
+while selection < counter
   puts "Make a selection: "
   selection = gets.chomp.to_i
-  if selection == counter
+  if selection >= counter
     break
   end
   id = ("id_" + selection.to_s).to_sym
@@ -49,19 +49,26 @@ while selection != counter
     transactions[id] = quantity
   end
   puts "Subtotal: #{currency_conv(subtotal)}"
-
-
 end
+
+if selection == counter
+  #call complete sale method
+elsif selection == counter + 1
+  #call reporting method
+end
+
+
 #This writes quantity & sku to csv output
 # We will add a date field to csv output when we finish eating
-CSV.open('report.csv', "wb") do |row|
+CSV.open('report.csv', "ab") do |row|
   transactions.each do |key, value|
     row << [
       products[key][:sku],
       products[key][:name],
       transactions[key],
       transactions[key] * products[key][:retail_price],
-      (products[key][:retail_price]-products[key][:wholesale_price]) * transactions[key]
+      (products[key][:retail_price]-products[key][:wholesale_price]) * transactions[key],
+      Time.now.strftime("%m/%d/%Y")
     ]
  end
 end
@@ -86,9 +93,39 @@ puts "The total change due is #{currency_conv(tendered-total)}\n\n "
 puts Time.now.strftime("%m/%d/%Y %I:%M%p")
 puts "================"
 
+#Creates Report
+puts "What date would you like reports for? (MM/DD/YYYY)"
+user_date = gets.chomp
+puts "On #{user_date} we sold:"
 
+report_hash = {}
+CSV.foreach('report.csv', 'r') do |row|
+  if row.include?(user_date)
+    if report_hash.include?(row[0])
+      report_hash[row[0]][:quantity] += row[2].to_i
+      report_hash[row[0]][:revenue] += row[3].to_i
+      report_hash[row[0]][:profit] += row[4].to_i
+    else
+      report_hash[row[0]] = {
+        name: row[1],
+        quantity: row[2].to_i,
+        revenue: row[3].to_f,
+        profit: row[4].to_f
+      }
+    end
+  end
+end
 
+profit = 0.0
+sales = 0.0
+report_hash.each do |key, value|
+  puts "SKU # #{key}, Name: #{value[:name]}, Quantity: #{value[:quantity]}, Revenue: #{currency_conv(value[:revenue])}, Profit: #{currency_conv(value[:profit])}"
+  profit += value[:profit]
+  sales += value[:revenue]
+end
 
+puts "Total Sales: #{currency_conv(sales)}"
+puts "Total Profit: #{currency_conv(profit)}"
 
 
 
