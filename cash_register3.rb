@@ -123,9 +123,10 @@ elsif selection == counter + 1
   #Creates Report
   puts "What date would you like reports for? (MM/DD/YYYY)"
   user_date = gets.chomp
-  until user_date.match(/(0[1-9]|1[012])[ \/.](0[1-9]|[12][0-9]|3[01])[ \/.](19|20)\d\d/)
+  binding.pry
+  while (user_date =~ /(0[1-9]|1[012])[ \/.](0[1-9]|[12][0-9]|3[01])[ \/.](19|20)\d\d/) == nil
     puts "Invalid date, please format date"
-    user_date == gets.chomp
+    user_date = gets.chomp
   end
   puts "On #{user_date} we sold:"
   profit = 0.0
