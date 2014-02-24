@@ -1,24 +1,52 @@
 require 'csv'
 require 'pry'
 
-products = {}
-transactions = {}
+
+
 
 def currency_conv(float)
   "$%0.2f" % float
 end
 
-#imports csv and puts into products hash
-ctr = 1
-CSV.foreach('products.csv', headers: true) do |row|
-  products[('id_' + ctr.to_s).to_sym] = {
-    sku: row[0],
-    name: row[1],
-    wholesale_price: row[2].to_f,
-    retail_price: row[3].to_f
-  }
-  ctr += 1
+def file_to_hash(filename)
+  #imports csv and puts into products hash
+  hash = {}
+  ctr = 1
+  CSV.foreach(filename, headers: true) do |row|
+    hash[('id_' + ctr.to_s).to_sym] = {
+      sku: row[0],
+      name: row[1],
+      wholesale_price: row[2].to_f,
+      retail_price: row[3].to_f
+    }
+    ctr += 1
+  end
+  hash
 end
+
+def create_report(filename, hash, transactions)
+  #This writes quantity & sku to csv output
+  #We will add a date field to csv output when we finish eating
+  CSV.open(filename, "ab") do |row|
+    transactions.each do |key, value|
+      row << [
+        hash[key][:sku],
+        hash[key][:name],
+        transactions[key],
+        transactions[key] * hash[key][:retail_price],
+        (hash[key][:retail_price]-hash[key][:wholesale_price]) * transactions[key],
+        Time.now.strftime("%m/%d/%Y")
+      ]
+   end
+  end
+
+end
+
+products = file_to_hash('products.csv')
+transactions = {}
+
+
+
 
 #Creates Table
 counter = 1
@@ -58,20 +86,9 @@ elsif selection == counter + 1
 end
 
 
-#This writes quantity & sku to csv output
-# We will add a date field to csv output when we finish eating
-CSV.open('report.csv', "ab") do |row|
-  transactions.each do |key, value|
-    row << [
-      products[key][:sku],
-      products[key][:name],
-      transactions[key],
-      transactions[key] * products[key][:retail_price],
-      (products[key][:retail_price]-products[key][:wholesale_price]) * transactions[key],
-      Time.now.strftime("%m/%d/%Y")
-    ]
- end
-end
+#report generation was here
+create_report('report.csv', products, transactions)
+
 
 #Creates Sale Complete
 puts "===Sale Complete==="
